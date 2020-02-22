@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"   
+    i18n_domain="sqlalchemy.dbapi">   
+  
+
+
+ <!-- db named utility -->
+  <utility
+	provides="..interfaces.IDbapi"
+	component=".dbutility.juanzeng"
+	name="juanzeng"
+	/>  
+    
+</configure>

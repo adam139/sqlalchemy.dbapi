@@ -1,0 +1,18 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"   
+    i18n_domain="sqlalchemy.dbapi">
+    
+
+  <includeDependencies package="." />
+  <permission
+      id="sqlalchemy.dbapi.input_db"
+      title="sqlalchemy.dbapi:Input db"
+      />  
+
+    <include package=".tests" />    
+
+
+    
+</configure>
