@@ -19,7 +19,7 @@ class Dbapi(object):
     
     implements(IDbapi)
     
-    def __init__(self,session,package,table,factorycls,linkstr,columns=None,fullsearch_clmns=None):
+    def __init__(self,session,package,table,factorycls,linkstr="mysql",columns=None,fullsearch_clmns=None):
         """
         parameters:
         :session db mapper session,
@@ -696,7 +696,6 @@ class Dbapi(object):
         if kwargs.has_key('order_by'):
             orderby = kwargs['order_by']
         else:
-            #default orderby is id
             orderby = 'id'        
         if kwargs.has_key('with_entities'):
             with_entities = kwargs['with_entities']
@@ -939,61 +938,113 @@ class Dbapi(object):
             except:
                 recorders = []
             return recorders
-        else:
+        else: # size = 0 return all
             if keyword == "":
-                selectcon = text("SELECT * FROM %s WHERE %s " % (self.table,self.filter_args2sql(filter_args)))
-                if bool(with_entities):
-                    clmns = self.get_columns()
-                    try:
-                        recorders = session.query(tablecls).with_entities(*clmns).\
-                            from_statement(selectcon).all()
-                    except:
-                        session.rollback()
+#                 selectcon = text("SELECT * FROM %s WHERE %s " % (self.table,self.filter_args2sql(filter_args)))
+#                 if bool(with_entities):
+# #                     clmns = self.get_columns()
+#                     try:
+#                         nums = session.query(func.count(getattr(tablecls,orderby,'id'))).scalar()
+#                         return nums
+#                     except:
+#                         recorders = []
+#                         session.rollback()
+#                 else:
+                ftrclmns = self.filter_args2ormfilter(filter_args)
+                try:
+                    recorders = session.query(func.count(getattr(tablecls,orderby,'id'))).filter(*ftrclmns).scalar()
+                    return recorders
+                except:
+                    recorders = []
+                    session.rollback()                    
+            else:
+#                 keysrchtxt = self.search_clmns2sqltxt(self.fullsearch_clmns)
+#                 sqltext = """SELECT * FROM %(tbl)s WHERE %(ktxt)s AND %(filter_cols)s  
+#                  """ % dict(tbl=self.table,ktxt=keysrchtxt,filter_cols=self.filter_args2sql(filter_args))
+#                 selectcon = text(sqltext)                
+#                 if bool(with_entities):
+#                     clmns = self.get_columns()
+#                     try:
+#                         recorders = session.query(tablecls).with_entities(*clmns).\
+#                             from_statement(selectcon.params(x=keyword)).all()
+#                     except:
+#                         session.rollback()
+#                 else:
+                ftrclmns = self.filter_args2ormfilter(filter_args)
+                keysearchcnd = self.search_clmns4filter(self.fullsearch_clmns,tablecls,keyword)
+                if bool(keysearchcnd):
+                    if len(keysearchcnd) > 1:
+                        try:
+                            recorders = session.query(tablecls).filter(or_(*keysearchcnd)). \
+                    filter(*ftrclmns).all()
+                        except:
+                            recorders = []
+                            session.rollback()
+                    else:
+                        try:
+                            recorders = session.query(tablecls).filter(keysearchcnd[0]). \
+                    filter(*ftrclmns).all()
+                        except:
+                            recorders = []
+                            session.rollback()                                                                                  
                 else:
-                    ftrclmns = self.filter_args2ormfilter(filter_args)
                     try:
                         recorders = session.query(tablecls).filter(*ftrclmns).all()
                     except:
-                        session.rollback()                    
-            else:
-                keysrchtxt = self.search_clmns2sqltxt(self.fullsearch_clmns)
-                sqltext = """SELECT * FROM %(tbl)s WHERE %(ktxt)s AND %(filter_cols)s  
-                 """ % dict(tbl=self.table,ktxt=keysrchtxt,filter_cols=self.filter_args2sql(filter_args))
-                selectcon = text(sqltext)                
-                if bool(with_entities):
-                    clmns = self.get_columns()
-                    try:
-                        recorders = session.query(tablecls).with_entities(*clmns).\
-                            from_statement(selectcon.params(x=keyword)).all()
-                    except:
-                        session.rollback()
-                else:
-                    ftrclmns = self.filter_args2ormfilter(filter_args)
-                    keysearchcnd = self.search_clmns4filter(self.fullsearch_clmns,tablecls,keyword)
-                    if bool(keysearchcnd):
-                        if len(keysearchcnd) > 1:
-                            try:
-                                recorders = session.query(tablecls).filter(or_(*keysearchcnd)). \
-                    filter(*ftrclmns).all()
-                            except:
-                                session.rollback()
-                        else:
-                            try:
-                                recorders = session.query(tablecls).filter(keysearchcnd[0]). \
-                    filter(*ftrclmns).all()
-                            except:
-                                session.rollback()                                                                                  
-                    else:
-                        try:
-                            recorders = session.query(tablecls).filter(*ftrclmns).all()
-                        except:
-                            session.rollback()                                                                                                  
+                        recorders = []
+                        session.rollback()                                                                                                  
             
             if bool(recorders):
                 nums = len(recorders)
             else:
                 nums = 0
             return nums
+
+    def total_query_with_filter(self,kwargs,filter_args):
+        """single table query attach filter arguments sum for some column
+        parameters:
+        :kwargs's keys parameters: dic
+            sumCol:will be summed db column,:string
+            keyword:full search keyword,:string
+     
+        :filter_args is multiple filter fields :dic
+        """       
+        tablecls = self.init_table()       
+        keyword = kwargs['keyword']
+        sum_col = kwargs['sumCol']
+        ftrclmns = self.filter_args2ormfilter(filter_args)
+        if keyword == "":
+            return session.query(func.sum(getattr(tablecls,sum_col,'id'))).filter(*ftrclmns).scalar()              
+        else:
+            keysearchcnd = self.search_clmns4filter(self.fullsearch_clmns,tablecls,keyword)      
+            if bool(keysearchcnd):
+                if len(keysearchcnd) > 1:
+                    try:
+                        recorders = session.query(func.sum(getattr(tablecls,sum_col,'id'))).filter(or_(*keysearchcnd)). \
+                    filter(*ftrclmns).scalar()
+                        return recorders
+                    except:
+                        recorders = 0
+                        session.rollback()
+                else:
+                    try:
+                        recorders = session.query(func.sum(getattr(tablecls,sum_col,'id'))).filter(keysearchcnd[0]). \
+                    filter(*ftrclmns).scalar()
+                        return recorders
+                    except:
+                        recorders = 0
+                        session.rollback()                                                                                  
+            else:
+                try:
+                    recorders = session.query(func.sum(getattr(tablecls,sum_col,'id'))).filter(*ftrclmns).scalar()
+                    return recorders
+                except:
+                    recorders = 0
+                    session.rollback()
+        return recorders           
+
+
+
     
     def multi_query(self,kwargs,tmaper,tbl,tc,cv,key1,key2):
         """多表连接分页查询

@@ -10,7 +10,7 @@
   <utility
 	provides="..interfaces.IDbapi"
 	component=".dbutility.juanzeng"
-	name="juanzeng"
+	name="juanzeng_test"
 	/>  
     
 </configure>

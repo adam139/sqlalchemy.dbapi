@@ -31,7 +31,7 @@ class TestDatabase(unittest.TestCase):
         from zope.component import queryUtility
         from datetime import datetime,timedelta
 
-        locator = queryUtility(IDbapi, name='juanzeng')
+        locator = queryUtility(IDbapi, name='juanzeng_test')
         # add
         args = {"status":0,"xiangmu_id":11,"xianjin":23.22,"openid":"demo_openid",'xingming':'demo_user',
                 'juanzeng_shijian':datetime.now()}

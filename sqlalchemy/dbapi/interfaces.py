@@ -7,7 +7,7 @@ from sqlalchemy.dbapi import _
 class IDbapi (Interface):
     """Db api """
 
-    def __init__(session,package,table,factorycls,columns=None,fullsearch_clmns=None):
+    def __init__(session,package,table,factorycls,linkstr="mysql",columns=None,fullsearch_clmns=None):
         """
         parameters:
         :session db mapper session,
@@ -40,6 +40,9 @@ class IDbapi (Interface):
             with_entities:if using serial number fetch recorder's columns,1 True,0 False      
         """         
 
+
+
+    
     def query_with_filter(kwargs,filter_args):
         """single table query attach filter arguments
         parameters:
@@ -50,6 +53,16 @@ class IDbapi (Interface):
             direction:sort direction
             max:batch size for Oracle
             with_entities:if using serial number fetch recorder's columns,1 True,0 False      
+        :filter_args is multiple filter fields :dic
+        """
+
+    def total_query_with_filter(kwargs,filter_args):
+        """single table query attach filter arguments sum for some column
+        parameters:
+        :kwargs's keys parameters: dic
+            sumCol:will be summed db column,:string
+            keyword:full search keyword,:string
+     
         :filter_args is multiple filter fields :dic
         """
         
